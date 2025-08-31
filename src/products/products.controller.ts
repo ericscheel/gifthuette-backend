@@ -1,16 +1,16 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
-  Query,
   Post,
-  Body,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('products')
 export class ProductsController {
@@ -31,7 +31,6 @@ export class ProductsController {
     return this.svc.bySlug(slug);
   }
 
-  // Beispiel: Admin-only Create
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
   @Post()
@@ -40,8 +39,8 @@ export class ProductsController {
     dto: {
       slug: string;
       name: string;
+      description?: string;
       priceCents: number;
-      stock?: number;
       categoryId?: string;
     },
   ) {
