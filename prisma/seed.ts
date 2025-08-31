@@ -1,57 +1,87 @@
-import { PrismaClient } from "@prisma/client";
-import * as argon2 from "argon2";
+// prisma/seed.ts
+import { PrismaClient } from '@prisma/client';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Admin
-  const adminHash = await argon2.hash("Admin123!");
+  // Admin-User
+  const adminHash = await argon2.hash('Admin123!');
   await prisma.user.upsert({
-    where: { email: "admin@gifthuette.local" },
+    where: { email: 'admin@gifthuette.local' },
     update: {},
     create: {
-      email: "admin@gifthuette.local",
+      email: 'admin@gifthuette.local',
       passwordHash: adminHash,
-      role: "ADMIN",
+      role: 'ADMIN',
     },
   });
 
-  // Kategorie
-  const cat = await prisma.category.upsert({
-    where: { slug: "geschenke" },
+  // Kategorien
+  const cocktails = await prisma.category.upsert({
+    where: { slug: 'cocktails' },
     update: {},
-    create: { slug: "geschenke", name: "Geschenke" },
+    create: { slug: 'cocktails', name: 'Cocktails' },
   });
 
-  // Produkte
-  await prisma.product.upsert({
-    where: { slug: "tasse-gifthuette" },
+  const alkoholfrei = await prisma.category.upsert({
+    where: { slug: 'alkoholfrei' },
+    update: {},
+    create: { slug: 'alkoholfrei', name: 'Alkoholfrei' },
+  });
+
+  // Drinks
+  const mojito = await prisma.drink.upsert({
+    where: { slug: 'mojito' },
     update: {},
     create: {
-      slug: "tasse-gifthuette",
-      name: "Gifthütten-Tasse",
-      priceCents: 1299,
-      stock: 50,
-      categoryId: cat.id,
+      slug: 'mojito',
+      name: 'Mojito',
+      description: 'Rum, Limette, Minze, Soda',
+      priceCents: 900,
+      categoryId: cocktails.id,
+      active: true,
+      media: {
+        create: [{ url: 'https://example.com/mojito.jpg', alt: 'Mojito' }],
+      },
     },
   });
-  await prisma.product.upsert({
-    where: { slug: "beanie-gifthuette" },
+
+  await prisma.drinkVariant.createMany({
+    data: [
+      { drinkId: mojito.id, label: '0,3l', priceCents: 900 },
+      { drinkId: mojito.id, label: '0,5l', priceCents: 1200 },
+    ],
+    skipDuplicates: true,
+  });
+
+  const virginCola = await prisma.drink.upsert({
+    where: { slug: 'virgin-cola' },
     update: {},
     create: {
-      slug: "beanie-gifthuette",
-      name: "Gifthütten-Beanie",
-      priceCents: 2499,
-      stock: 30,
-      categoryId: cat.id,
+      slug: 'virgin-cola',
+      name: 'Cola',
+      description: 'Eiskalt, ohne Alkohol',
+      priceCents: 300,
+      categoryId: alkoholfrei.id,
+      active: true,
     },
   });
+
+  await prisma.drinkVariant.createMany({
+    data: [
+      { drinkId: virginCola.id, label: '0,3l', priceCents: 300 },
+      { drinkId: virginCola.id, label: '0,5l', priceCents: 400 },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log('✅ Seed fertig.');
 }
 
 main()
-  .then(() => console.log("Seed fertig."))
   .catch((e) => {
-    console.error(e);
+    console.error('❌ Seed Fehler:', e);
     process.exit(1);
   })
   .finally(async () => {
