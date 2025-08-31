@@ -1,0 +1,64 @@
+name: backend-deploy
+on:
+  push:
+    branches: [develop, main]
+
+env:
+  IMAGE_NAME: ${{ vars.REGISTRY }}/${{ github.repository }}:backend-${{ github.sha }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN || github.token }}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME }}
+          provenance: false
+          build-args: |
+            NODE_ENV=production
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    steps:
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+
+      - name: Pull & restart backend (and migrate)
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            set -euo pipefail
+            cd /opt/gifthuette &&
+            docker compose pull backend &&
+            docker compose up -d backend &&
+            docker compose exec -T backend npx prisma migrate deploy
+          "
