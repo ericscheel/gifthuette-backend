@@ -21,6 +21,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@User() user: { id: string; email: string; role: string }) {
-    return user; // { id, email, role }
+    return user;
   }
 }
