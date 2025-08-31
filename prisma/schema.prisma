@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CUSTOMER
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  drinks    Drink[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Drink {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  name        String
+  description String?
+  priceCents  Int
+  variants    DrinkVariant[]
+  active      Boolean        @default(true)
+  categoryId  String?
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  media       Media[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model DrinkVariant {
+  id         String @id @default(cuid())
+  label      String // z. B. "0,3l", "0,5l", "Shot"
+  priceCents Int
+  drinkId    String
+  drink      Drink  @relation(fields: [drinkId], references: [id])
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  drinkId   String?
+  drink     Drink?   @relation(fields: [drinkId], references: [id])
+  createdAt DateTime @default(now())
+}
+model Location {
+  id        String   @id @default(cuid())
+  name      String   // z. B. Stadt, Event-Name
+  address   String?
+  city      String?
+  date      DateTime // Datum des Events/Standorts
+  isCurrent Boolean  @default(false) // für "Wo sind wir heute?"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Highlight {
+  id        String   @id @default(cuid())
+  title     String
+  description String?
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  confirmed Boolean  @default(false) // Double-Opt-In möglich
+}
