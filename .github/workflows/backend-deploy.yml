@@ -3,7 +3,7 @@ name: Backend Deploy
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # Manuell auslösbar
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -65,25 +65,28 @@ jobs:
           script: |
             cd /opt/gifthuette
             
+            # PATH explizit setzen
+            export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+            
             # Backup erstellen (falls DB läuft)
-            if docker compose ps | grep -q gifthuette-db; then
-              docker compose exec -T db pg_dump -U gifthuette_user gifthuette > "backups/backup-$(date +%Y%m%d-%H%M%S).sql" || true
+            if /usr/bin/docker compose ps | /bin/grep -q gifthuette-db; then
+              /usr/bin/docker compose exec -T db pg_dump -U gifthuette_user gifthuette > "backups/backup-$(/bin/date +%Y%m%d-%H%M%S).sql" || true
             fi
             
             # Image pullen
             export IMAGE_TAG=backend-latest
-            docker compose pull backend
+            /usr/bin/docker compose pull backend
             
             # Services starten
-            docker compose up -d
+            /usr/bin/docker compose up -d
             
             # Warten bis Backend bereit ist
             echo "Waiting for backend to be ready..."
-            timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+            /usr/bin/timeout 60 /bin/bash -c 'until /usr/bin/curl -f http://localhost:3000/health; do sleep 2; done'
             
             # Datenbank migrieren
-            docker compose exec -T backend npx prisma migrate deploy
+            /usr/bin/docker compose exec -T backend npx prisma migrate deploy
             
             # Status prüfen
-            docker compose ps
+            /usr/bin/docker compose ps
             echo "✅ Deployment successful!"
