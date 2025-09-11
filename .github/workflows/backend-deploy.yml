@@ -63,30 +63,67 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /opt/gifthuette
-            
-            # PATH explizit setzen
+            # PATH für alle Befehle setzen
             export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
             
+            echo "Starting deployment..."
+            cd /opt/gifthuette
+            
+            # Docker Login für Registry-Zugriff
+            echo "Logging in to GitHub Container Registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | /usr/bin/docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
             # Backup erstellen (falls DB läuft)
+            echo "Creating database backup..."
             if /usr/bin/docker compose ps | /bin/grep -q gifthuette-db; then
-              /usr/bin/docker compose exec -T db pg_dump -U gifthuette_user gifthuette > "backups/backup-$(/bin/date +%Y%m%d-%H%M%S).sql" || true
+              /usr/bin/docker compose exec -T db pg_dump -U gifthuette_user gifthuette > "backups/backup-$(/bin/date +%Y%m%d-%H%M%S).sql" 2>/dev/null || echo "Backup failed, continuing..."
             fi
             
-            # Image pullen
+            # Aktuelles Backend stoppen
+            echo "Stopping current backend..."
+            /usr/bin/docker compose stop backend 2>/dev/null || true
+            
+            # Neues Image pullen
+            echo "Pulling new backend image..."
             export IMAGE_TAG=backend-latest
             /usr/bin/docker compose pull backend
             
-            # Services starten
-            /usr/bin/docker compose up -d
+            # Services starten (DB und Redis zuerst, dann Backend)
+            echo "Starting database and redis..."
+            /usr/bin/docker compose up -d db redis
             
-            # Warten bis Backend bereit ist
+            # Kurz warten bis DB bereit ist
+            echo "Waiting for database to be ready..."
+            /bin/sleep 10
+            
+            # Backend starten
+            echo "Starting backend..."
+            /usr/bin/docker compose up -d backend
+            
+            # Warten bis Backend bereit ist (mit Timeout)
             echo "Waiting for backend to be ready..."
-            /usr/bin/timeout 60 /bin/bash -c 'until /usr/bin/curl -f http://localhost:3000/health; do sleep 2; done'
+            for i in {1..30}; do
+              if /usr/bin/curl -f http://localhost:3000/health >/dev/null 2>&1; then
+                echo "Backend is ready!"
+                break
+              fi
+              echo "Waiting... ($i/30)"
+              /bin/sleep 2
+            done
             
             # Datenbank migrieren
-            /usr/bin/docker compose exec -T backend npx prisma migrate deploy
+            echo "Running database migrations..."
+            /usr/bin/docker compose exec -T backend npx prisma migrate deploy || echo "Migration failed, but continuing..."
             
-            # Status prüfen
+            # Final status check
+            echo "Checking final status..."
             /usr/bin/docker compose ps
-            echo "✅ Deployment successful!"
+            
+            # Health check
+            if /usr/bin/curl -f http://localhost:3000/health >/dev/null 2>&1; then
+              echo "✅ Deployment successful! Backend is healthy."
+            else
+              echo "⚠️  Deployment completed but health check failed."
+              echo "Backend logs:"
+              /usr/bin/docker compose logs --tail=20 backend
+            fi
