@@ -4,7 +4,8 @@ on:
     branches: [develop, main]
 
 env:
-  IMAGE_NAME: ${{ vars.REGISTRY }}/${{ github.repository }}:backend-${{ github.sha }}
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 permissions:
   contents: read
@@ -23,9 +24,20 @@ jobs:
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
-          password: ${{ secrets.REGISTRY_TOKEN || github.token }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=backend-{{branch}}-
+            type=raw,value=backend-latest,enable={{is_default_branch}}
 
       - name: Build & Push
         uses: docker/build-push-action@v6
@@ -33,32 +45,62 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ env.IMAGE_NAME }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           provenance: false
           build-args: |
             NODE_ENV=production
 
-  deploy:
+  deploy-staging:
+    if: github.ref == 'refs/heads/develop'
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment: staging
     steps:
-      - name: Start SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Deploy to Staging
+        uses: appleboy/ssh-action@v1.1.0
         with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Add known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
-
-      - name: Pull & restart backend (and migrate)
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-            set -euo pipefail
-            cd /opt/gifthuette &&
-            docker compose pull backend &&
-            docker compose up -d backend &&
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/gifthuette
+            export IMAGE_TAG="backend-develop-${{ github.sha }}"
+            docker compose pull backend
+            docker compose up -d backend
             docker compose exec -T backend npx prisma migrate deploy
-          "
+            docker compose logs --tail=50 backend
+
+  deploy-production:
+    if: github.ref == 'refs/heads/main'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy to Production
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/gifthuette
+            
+            # Backup erstellen
+            docker compose exec -T db pg_dump -U gifthuette_user gifthuette > "backups/backup-$(date +%Y%m%d-%H%M%S).sql"
+            
+            # Deployment
+            export IMAGE_TAG="backend-latest"
+            docker compose pull backend
+            docker compose up -d backend
+            docker compose exec -T backend npx prisma migrate deploy
+            
+            # Health Check
+            timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+            
+            # Cleanup alte Images
+            docker image prune -af --filter "until=24h"
+            
+            echo "✅ Production deployment successful!"
