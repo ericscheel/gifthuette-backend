@@ -21,7 +21,14 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
   @Post()
-  create(@Body() dto: { slug: string; name: string }) {
+  create(
+    @Body()
+    dto: {
+      slug: string;
+      name: string;
+      description: string;
+    },
+  ) {
     return this.svc.create(dto);
   }
 }

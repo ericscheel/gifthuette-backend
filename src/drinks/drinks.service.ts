@@ -29,6 +29,13 @@ export class DrinksService {
     });
   }
 
+  async all() {
+    return this.prisma.drink.findMany({
+      include: { media: true, category: true, variants: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async bySlug(slug: string) {
     return this.prisma.drink.findUnique({
       where: { slug },

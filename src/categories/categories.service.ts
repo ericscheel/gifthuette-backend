@@ -12,7 +12,7 @@ export class CategoriesService {
     });
   }
 
-  async create(dto: { slug: string; name: string }) {
+  async create(dto: { slug: string; name: string; description: string }) {
     return this.prisma.category.create({ data: dto });
   }
 

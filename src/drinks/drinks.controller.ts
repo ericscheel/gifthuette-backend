@@ -1,4 +1,5 @@
 import {
+  All,
   Body,
   Controller,
   Get,
@@ -24,6 +25,11 @@ export class DrinksController {
     @Query('pageSize') pageSize = '20',
   ) {
     return this.svc.list({ q, category, page: +page, pageSize: +pageSize });
+  }
+
+  @Get('all')
+  all() {
+    return this.svc.all();
   }
 
   @Get(':slug')
