@@ -23,4 +23,9 @@ export class AuthController {
   me(@User() user: { id: string; email: string; role: string }) {
     return user;
   }
+  
+  @Get('health')
+  health() {
+    return { status: 'ok' };
+  }
 }
