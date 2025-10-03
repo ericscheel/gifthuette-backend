@@ -28,4 +28,9 @@ export class AuthController {
   health() {
     return { status: 'ok' };
   }
+
+  @Get('server-status')
+  serverStatus() {
+    return { status: 'ok' };
+  }
 }
