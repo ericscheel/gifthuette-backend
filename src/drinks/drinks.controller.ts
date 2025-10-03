@@ -7,6 +7,8 @@ import {
   Post,
   Query,
   UseGuards,
+  Delete,
+  Put,
 } from '@nestjs/common';
 import { DrinksService } from './drinks.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -52,6 +54,30 @@ export class DrinksController {
     },
   ) {
     return this.svc.create(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.svc.delete(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @Put(':id')
+  update(
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      slug?: string;
+      name?: string;
+      description?: string;
+      priceCents?: number;
+      categoryId?: string;
+    },
+  ) {
+    return this.svc.update(id, dto);
   }
 
   // Variante hinzufügen (z. B. "0,3l", "0,5l")

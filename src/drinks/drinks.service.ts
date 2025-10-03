@@ -60,4 +60,21 @@ export class DrinksService {
       data: { label, priceCents, drinkId },
     });
   }
+  async delete(id: string) {
+    return this.prisma.drink.delete({
+      where: { id },
+    });
+  }
+  async update(id: string, dto: {
+    slug?: string;
+    name?: string;
+    description?: string;
+    priceCents?: number;
+    categoryId?: string;
+  }) {
+    return this.prisma.drink.update({
+      where: { id },
+      data: { ...dto },
+    });
+  }
 }
