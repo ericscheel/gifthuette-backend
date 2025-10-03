@@ -19,7 +19,7 @@ async function bootstrap() {
     .setDescription(
       'API Dokumentation für Drinks, Kategorien, Locations, Highlights, Newsletter & Social',
     )
-    .setVersion('1.0')
+    .setVersion('2.0')
     .addBearerAuth()
     .build();
 
