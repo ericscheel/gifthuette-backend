@@ -78,7 +78,7 @@ export class DrinksService {
           this.prisma.ingredient.create({
             data: {
               name,
-              drink: { connect: { id: createdDrink.id } },
+              drinks: { connect: { id: createdDrink.id } },
             },
           })
         )
