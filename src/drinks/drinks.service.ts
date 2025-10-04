@@ -50,6 +50,8 @@ export class DrinksService {
     description?: string;
     priceCents: number;
     categoryId?: string;
+    alcoholPercentage?: Decimal;
+    active?: boolean;
   }) {
     const { categoryId, ...rest } = dto;
     return this.prisma.drink.create({
