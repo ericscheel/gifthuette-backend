@@ -39,7 +39,7 @@ model Drink {
   name        String
   description String         @db.Text // z. B. "Erfrischungsgetränk mit Kohlensäure und Zitrone"
   priceCents  Int
-  ingredients Ingredient[]  // z. B. ["Wasser", "Kohlensäure", "Zucker", "Aromen"]
+  ingredients DrinkIngredient[]
   variants    DrinkVariant[]
   alcoholPercentage Decimal?  @db.Decimal(5, 2)
   active      Boolean        @default(true)
@@ -56,7 +56,18 @@ model Ingredient {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   drinkIds  String
-  drinks    Drink[]
+  drinks    DrinkIngredient[]
+}
+
+
+model DrinkIngredient {
+  id           String     @id @default(cuid())
+  drink        Drink      @relation(fields: [drinkId], references: [id])
+  drinkId      String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+
+  @@unique([drinkId, ingredientId]) // verhindert doppelte Einträge
 }
 
 model DrinkVariant {

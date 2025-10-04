@@ -52,16 +52,25 @@ export class DrinksService {
     categoryId?: string;
     alcoholPercentage?: number;
     active?: boolean;
-    ingredients?: string[]; // Liste der Zutaten als Strings
+    ingredients?: string[];
   }) {
-    const { categoryId, ingredients, ...rest } = dto;
+    const {
+      categoryId,
+      ingredients,
+      description,
+      ...rest
+    } = dto;
 
+    // Drink erstellen
     const createdDrink = await this.prisma.drink.create({
       data: {
         ...rest,
-        category: categoryId ? { connect: { id: categoryId } } : undefined,
-        media: undefined, // optional, falls du später Medien hinzufügst
-        variants: undefined, // optional, falls du später Varianten hinzufügst
+        description: description ?? "", // falls description im Schema nicht optional ist
+        ...(categoryId && {
+          category: {
+            connect: { id: categoryId },
+          },
+        }),
       },
       include: {
         media: true,
@@ -70,14 +79,25 @@ export class DrinksService {
       },
     });
 
-    // Zutaten separat anlegen und mit dem Drink verknüpfen
+    // Zutaten verknüpfen (viele-zu-viele)
     if (ingredients && ingredients.length > 0) {
       await Promise.all(
-        ingredients.map((name) =>
-          this.prisma.ingredient.create({
-            data: { name, drinkIds: createdDrink.id }, // Verknüpfe die Zutat mit dem Drink
-          }),
-        ),
+        ingredients.map(async (name) => {
+          // Zutat suchen oder erstellen
+          const ingredient = await this.prisma.ingredient.upsert({
+            where: { name },
+            update: {},
+            create: { name, drinkIds: createdDrink.id },
+          });
+
+          // Verknüpfung im Join-Modell
+          await this.prisma.drinkIngredient.create({
+            data: {
+              drinkId: createdDrink.id,
+              ingredientId: ingredient.id,
+            },
+          });
+        })
       );
     }
     return createdDrink;
