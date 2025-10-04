@@ -39,6 +39,7 @@ model Drink {
   name        String
   description String?
   priceCents  Int
+  ingredients Ingredient[]  // z. B. ["Wasser", "Kohlensäure", "Zucker", "Aromen"]
   variants    DrinkVariant[]
   alcoholPercentage Decimal?  @db.Decimal(5, 2)
   active      Boolean        @default(true)
@@ -47,6 +48,15 @@ model Drink {
   media       Media[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+}
+
+model Ingredient {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  drinkIds  String
+  drinks    Drink  @relation(references: [id], fields: [drinkIds])
 }
 
 model DrinkVariant {

@@ -51,13 +51,14 @@ export class DrinksService {
     priceCents: number;
     categoryId?: string;
     alcoholPercentage?: Decimal;
+    ingredients?: string[];
     active?: boolean;
   }) {
     const { categoryId, ...rest } = dto;
     return this.prisma.drink.create({
-      data: { 
-        ...rest, 
-        category: categoryId ? { connect: { id: categoryId } } : undefined 
+      data: {
+        ...rest,
+        category: categoryId ? { connect: { id: categoryId } } : undefined,
       },
       include: { media: true, category: true, variants: true },
     });
@@ -73,19 +74,25 @@ export class DrinksService {
       where: { id },
     });
   }
-  async update(id: string, dto: {
-    slug?: string;
-    name?: string;
-    description?: string;
-    priceCents?: number;
-    alcoholPercentage?: Decimal;
-    active?: boolean;
-    categoryId?: string;
-  }) {
+  async update(
+    id: string,
+    dto: {
+      slug?: string;
+      name?: string;
+      description?: string;
+      priceCents?: number;
+      alcoholPercentage?: Decimal;
+      active?: boolean;
+      categoryId?: string;
+    },
+  ) {
     const { categoryId, ...rest } = dto;
     return this.prisma.drink.update({
       where: { id },
-      data: { ...rest, category: categoryId ? { connect: { id: categoryId } } : undefined },
+      data: {
+        ...rest,
+        category: categoryId ? { connect: { id: categoryId } } : undefined,
+      },
       include: { media: true, category: true, variants: true },
     });
   }
