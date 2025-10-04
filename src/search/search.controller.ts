@@ -14,14 +14,8 @@ export class SearchController {
     async search(@Body('q') query: string) {
       return this.svc.search(query);
     }
-}
-
-@Controller('suggestions')
-export class SuggestionsController {
-  constructor(private readonly svc: SearchService) {}
-
-  @Get()
-  async suggest(@Query('q') query: string) {
-    return this.svc.suggest(query);
-  }
+    @Get('suggestions')
+    async suggest(@Query('q') query: string) {
+      return this.svc.suggest(query);
+    }
 }
