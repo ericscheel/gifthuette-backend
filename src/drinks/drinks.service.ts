@@ -51,7 +51,7 @@ export class DrinksService {
     priceCents: number;
     categoryId?: string;
     alcoholPercentage?: Decimal;
-    ingredients?: string[];
+    ingredients?: string;
     active?: boolean;
   }) {
     const { categoryId, ...rest } = dto;
