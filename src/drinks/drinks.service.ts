@@ -95,10 +95,27 @@ export class DrinksService {
     });
   }
   async delete(id: string) {
+    // Lösche verknüpfte Zutaten
+    await this.prisma.ingredient.deleteMany({
+      where: { drinkIds: id },
+    });
+
+    // Lösche verknüpfte Varianten
+    await this.prisma.drinkVariant.deleteMany({
+      where: { drinkId: id },
+    });
+
+    // Lösche verknüpfte Medien
+    await this.prisma.media.deleteMany({
+      where: { drinkId: id },
+    });
+
+    // Jetzt kann der Drink gelöscht werden
     return this.prisma.drink.delete({
       where: { id },
     });
   }
+  
   async update(
     id: string,
     dto: {
