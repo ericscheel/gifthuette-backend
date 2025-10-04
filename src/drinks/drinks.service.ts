@@ -44,25 +44,50 @@ export class DrinksService {
     });
   }
 
+
   async create(dto: {
     slug: string;
     name: string;
     description?: string;
     priceCents: number;
     categoryId?: string;
-    alcoholPercentage?: Decimal;
-    ingredients?: string[];
+    alcoholPercentage?: number;
     active?: boolean;
+    ingredients?: string[]; // Liste der Zutaten als Strings
   }) {
-    const { categoryId, ...rest } = dto;
-    return this.prisma.drink.create({
+    const { categoryId, ingredients, ...rest } = dto;
+
+    const createdDrink = await this.prisma.drink.create({
       data: {
         ...rest,
         category: categoryId ? { connect: { id: categoryId } } : undefined,
+        media: undefined, // optional, falls du später Medien hinzufügst
+        variants: undefined, // optional, falls du später Varianten hinzufügst
       },
-      include: { media: true, category: true, variants: true },
+      include: {
+        media: true,
+        category: true,
+        variants: true,
+      },
     });
+
+    // Zutaten separat anlegen und mit dem Drink verknüpfen
+    if (ingredients && ingredients.length > 0) {
+      await Promise.all(
+        ingredients.map((name) =>
+          this.prisma.Ingredient.create({
+            data: {
+              name,
+              drink: { connect: { id: createdDrink.id } },
+            },
+          })
+        )
+      );
+    }
+
+    return createdDrink;
   }
+
 
   async addVariant(drinkId: string, label: string, priceCents: number) {
     return this.prisma.drinkVariant.create({
