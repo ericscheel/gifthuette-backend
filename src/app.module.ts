@@ -10,6 +10,7 @@ import { HighlightsModule } from './highlights/highlights.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { SocialModule } from './social/social.module';
 import { SearchModule } from './search/search.module';
+import { SuggestionsController } from './search/search.controller';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SearchModule } from './search/search.module';
     PrismaModule,
     SearchModule,
     SocialModule,
+    SuggestionsController,
     NewsletterModule,
     HighlightsModule,
     DrinksModule,
