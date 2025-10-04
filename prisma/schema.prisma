@@ -26,6 +26,7 @@ enum Role {
 model Category {
   id        String   @id @default(cuid())
   slug      String   @unique
+  description String?
   name      String
   drinks    Drink[]
   createdAt DateTime @default(now())
