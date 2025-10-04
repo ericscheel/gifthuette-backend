@@ -44,7 +44,6 @@ export class DrinksService {
     });
   }
 
-
   async create(dto: {
     slug: string;
     name: string;
@@ -76,18 +75,13 @@ export class DrinksService {
       await Promise.all(
         ingredients.map((name) =>
           this.prisma.ingredient.create({
-            data: {
-              name,
-              drinks: { connect: { id: createdDrink.id } },
-            },
-          })
-        )
+            data: { name, drinkIds: createdDrink.id }, // Verknüpfe die Zutat mit dem Drink
+          }),
+        ),
       );
     }
-
     return createdDrink;
   }
-
 
   async addVariant(drinkId: string, label: string, priceCents: number) {
     return this.prisma.drinkVariant.create({
@@ -97,7 +91,7 @@ export class DrinksService {
   async delete(id: string) {
     // Lösche verknüpfte Zutaten
     await this.prisma.ingredient.deleteMany({
-      where: { id: id },
+      where: { drinkIds: id },
     });
 
     // Lösche verknüpfte Varianten
