@@ -22,4 +22,10 @@ export class CategoriesService {
       include: { drinks: { include: { variants: true, media: true } } },
     });
   }
+  
+  async delete(id: string) {
+    return this.prisma.category.delete({
+      where: { id },
+    });
+  }
 }
