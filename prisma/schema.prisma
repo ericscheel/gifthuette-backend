@@ -39,6 +39,7 @@ model Drink {
   description String?
   priceCents  Int
   variants    DrinkVariant[]
+  alcoholPercentage Decimal?  @db.Decimal(5, 2)
   active      Boolean        @default(true)
   categoryId  String?
   category    Category?      @relation(fields: [categoryId], references: [id])

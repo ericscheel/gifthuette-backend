@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class DrinksService {
@@ -75,6 +76,8 @@ export class DrinksService {
     name?: string;
     description?: string;
     priceCents?: number;
+    alcoholPercentage?: Decimal;
+    active?: boolean;
     categoryId?: string;
   }) {
     const { categoryId, ...rest } = dto;
