@@ -75,7 +75,7 @@ export class DrinksService {
     if (ingredients && ingredients.length > 0) {
       await Promise.all(
         ingredients.map((name) =>
-          this.prisma.Ingredient.create({
+          this.prisma.ingredient.create({
             data: {
               name,
               drink: { connect: { id: createdDrink.id } },
