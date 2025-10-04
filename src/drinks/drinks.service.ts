@@ -50,8 +50,13 @@ export class DrinksService {
     priceCents: number;
     categoryId?: string;
   }) {
+    const { categoryId, ...rest } = dto;
     return this.prisma.drink.create({
-      data: { ...dto, active: true },
+      data: { 
+        ...rest, 
+        category: categoryId ? { connect: { id: categoryId } } : undefined 
+      },
+      include: { media: true, category: true, variants: true },
     });
   }
 
@@ -72,9 +77,11 @@ export class DrinksService {
     priceCents?: number;
     categoryId?: string;
   }) {
+    const { categoryId, ...rest } = dto;
     return this.prisma.drink.update({
       where: { id },
-      data: { ...dto },
+      data: { ...rest, category: categoryId ? { connect: { id: categoryId } } : undefined },
+      include: { media: true, category: true, variants: true },
     });
   }
 }
