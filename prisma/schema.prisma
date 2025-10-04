@@ -37,7 +37,7 @@ model Drink {
   id          String         @id @default(cuid())
   slug        String         @unique
   name        String
-  description String?
+  description String         @db.Text // z. B. "Erfrischungsgetränk mit Kohlensäure und Zitrone"
   priceCents  Int
   ingredients Ingredient[]  // z. B. ["Wasser", "Kohlensäure", "Zucker", "Aromen"]
   variants    DrinkVariant[]
