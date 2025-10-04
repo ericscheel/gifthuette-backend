@@ -97,7 +97,7 @@ export class DrinksService {
   async delete(id: string) {
     // Lösche verknüpfte Zutaten
     await this.prisma.ingredient.deleteMany({
-      where: { drinkId: id },
+      where: { id: id },
     });
 
     // Lösche verknüpfte Varianten
